@@ -1,6 +1,8 @@
 """Tab para detectar y reparar videos corruptos"""
 from PyQt6.QtWidgets import (QWidget, QVBoxLayout, QHBoxLayout, QPushButton,
-                               QGroupBox, QFileDialog, QLabel, QTextEdit)
+                               QGroupBox, QFileDialog, QLabel, QTextEdit,
+                               QProgressBar)
+from PyQt6.QtCore import Qt
 from threads.corruption_thread import CorruptionThread
 from core.corruption_detector import CorruptionDetector
 import os
@@ -38,7 +40,7 @@ class CorruptionTab(QWidget):
         file_layout.addLayout(btn_layout)
         
         self.label_file = QLabel("No hay archivo seleccionado")
-        self.label_file.setStyleSheet("padding: 10px; background-color: #f0f0f0;")
+        self.label_file.setProperty("class", "file_label")
         file_layout.addWidget(self.label_file)
         
         file_group.setLayout(file_layout)
@@ -61,8 +63,23 @@ class CorruptionTab(QWidget):
         self.btn_repair.clicked.connect(self.repair_video)
         self.btn_repair.setMinimumHeight(50)
         self.btn_repair.setEnabled(False)
-        self.btn_repair.setStyleSheet("font-size: 14px; font-weight: bold; background-color: #FF5722; color: white;")
+        self.btn_repair.setProperty("class", "danger_btn")
+        self.btn_repair.setProperty("class", "danger_btn")
         layout.addWidget(self.btn_repair)
+        
+        # ProgressBar
+        status_layout = QVBoxLayout()
+        self.label_status = QLabel("Listo")
+        self.label_status.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        status_layout.addWidget(self.label_status)
+        
+        self.progress_bar = QProgressBar()
+        self.progress_bar.setRange(0, 100)
+        self.progress_bar.setValue(0)
+        self.progress_bar.setTextVisible(True)
+        status_layout.addWidget(self.progress_bar)
+        
+        layout.addLayout(status_layout)
         
         self.setLayout(layout)
     
@@ -94,6 +111,8 @@ class CorruptionTab(QWidget):
         self.btn_analyze.setEnabled(False)
         self.btn_repair.setEnabled(False)
         self.text_result.clear()
+        self.label_status.setText("Analizando video...")
+        self.progress_bar.setValue(0)
         
         # Crear thread
         self.corruption_thread = CorruptionThread(self.current_file)
@@ -155,6 +174,8 @@ class CorruptionTab(QWidget):
                 return
         
         self.btn_repair.setEnabled(False)
+        self.label_status.setText("Iniciando reparación...")
+        self.progress_bar.setValue(0)
         
         # Usar el mismo thread de reparación que ya teníamos
         from threads.base_thread import BaseThread
@@ -216,10 +237,12 @@ class CorruptionTab(QWidget):
     
     def update_progress(self, value):
         """Actualiza progreso"""
+        self.progress_bar.setValue(value)
         if self.parent_window:
             self.parent_window.update_progress(value)
     
     def log(self, message):
         """Log"""
+        self.label_status.setText(message)
         if self.parent_window:
             self.parent_window.log(message)

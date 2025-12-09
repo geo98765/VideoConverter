@@ -38,7 +38,7 @@ class QueueTab(QWidget):
         queue_buttons.addWidget(btn_remove_selected)
         
         self.label_queue_count = QLabel("Videos en cola: 0")
-        self.label_queue_count.setStyleSheet("font-weight: bold;")
+        self.label_queue_count.setProperty("class", "info_label")
         queue_buttons.addWidget(self.label_queue_count)
         
         queue_buttons.addStretch()
@@ -62,3 +62,15 @@ class QueueTab(QWidget):
     def update_count(self, count):
         """Actualiza el contador"""
         self.label_queue_count.setText(f"Videos en cola: {count}")
+
+    def add_video_to_table(self, video):
+        """Agrega un video a la tabla"""
+        row = self.table_queue.rowCount()
+        self.table_queue.insertRow(row)
+        
+        from PyQt6.QtWidgets import QTableWidgetItem
+        
+        self.table_queue.setItem(row, 0, QTableWidgetItem(video.name))
+        self.table_queue.setItem(row, 1, QTableWidgetItem(video.get_size_formatted()))
+        self.table_queue.setItem(row, 2, QTableWidgetItem("Pendiente"))
+        self.table_queue.setItem(row, 3, QTableWidgetItem(video.path))

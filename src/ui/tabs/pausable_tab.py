@@ -28,7 +28,7 @@ class PausableTab(QWidget):
         file_layout.addWidget(btn_select)
         
         self.label_file = QLabel("No hay archivo seleccionado")
-        self.label_file.setStyleSheet("padding: 10px; background-color: #f0f0f0;")
+        self.label_file.setProperty("class", "file_label")
         file_layout.addWidget(self.label_file)
         
         file_group.setLayout(file_layout)
@@ -61,7 +61,7 @@ class PausableTab(QWidget):
         status_layout = QVBoxLayout()
         
         self.label_status = QLabel("⏹️ Detenido")
-        self.label_status.setStyleSheet("font-size: 16px; font-weight: bold; padding: 10px;")
+        self.label_status.setProperty("class", "info_label")
         status_layout.addWidget(self.label_status)
         
         status_group.setLayout(status_layout)
@@ -74,35 +74,35 @@ class PausableTab(QWidget):
         self.btn_start.clicked.connect(self.start_conversion)
         self.btn_start.setMinimumHeight(50)
         self.btn_start.setEnabled(False)
-        self.btn_start.setStyleSheet("font-size: 14px; font-weight: bold; background-color: #4CAF50; color: white;")
+        self.btn_start.setProperty("class", "success_btn")
         control_layout.addWidget(self.btn_start)
         
         self.btn_pause = QPushButton("⏸️ Pausar")
         self.btn_pause.clicked.connect(self.pause_conversion)
         self.btn_pause.setMinimumHeight(50)
         self.btn_pause.setEnabled(False)
-        self.btn_pause.setStyleSheet("font-size: 14px; font-weight: bold; background-color: #FF9800; color: white;")
+        self.btn_pause.setProperty("class", "warning_btn")
         control_layout.addWidget(self.btn_pause)
         
         self.btn_resume = QPushButton("▶️ Reanudar")
         self.btn_resume.clicked.connect(self.resume_conversion)
         self.btn_resume.setMinimumHeight(50)
         self.btn_resume.setEnabled(False)
-        self.btn_resume.setStyleSheet("font-size: 14px; font-weight: bold; background-color: #2196F3; color: white;")
+        self.btn_resume.setProperty("class", "primary_btn")
         control_layout.addWidget(self.btn_resume)
         
         self.btn_stop = QPushButton("⏹️ Detener")
         self.btn_stop.clicked.connect(self.stop_conversion)
         self.btn_stop.setMinimumHeight(50)
         self.btn_stop.setEnabled(False)
-        self.btn_stop.setStyleSheet("font-size: 14px; font-weight: bold; background-color: #f44336; color: white;")
+        self.btn_stop.setProperty("class", "danger_btn")
         control_layout.addWidget(self.btn_stop)
         
         layout.addLayout(control_layout)
         
         # Nota
         note = QLabel("ℹ️ Nota: La pausa/reanudación puede no funcionar en todas las plataformas")
-        note.setStyleSheet("padding: 10px; background-color: #FFF9C4;")
+        note.setProperty("class", "note_label")
         note.setWordWrap(True)
         layout.addWidget(note)
         

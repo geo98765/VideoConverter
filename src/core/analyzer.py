@@ -51,10 +51,19 @@ class VideoAnalyzer:
             'subtitle_streams': []
         }
         
+        import os
+        
         # Información del formato
+        # Force file size from OS first
+        if os.path.exists(file_path):
+            analysis['file_size'] = os.path.getsize(file_path)
+        
         if 'format' in data:
             fmt = data['format']
-            analysis['file_size'] = int(fmt.get('size', 0))
+            # Fallback or cross-check if needed, but OS is truth for physical size
+            if analysis['file_size'] == 0:
+                 analysis['file_size'] = int(fmt.get('size', 0))
+            
             analysis['duration'] = float(fmt.get('duration', 0))
             analysis['bitrate'] = int(fmt.get('bit_rate', 0))
             analysis['format_name'] = fmt.get('format_name', '')

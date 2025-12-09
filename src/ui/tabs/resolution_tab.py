@@ -1,7 +1,9 @@
 """Tab de cambio de resolución"""
 from PyQt6.QtWidgets import (QWidget, QVBoxLayout, QHBoxLayout, QPushButton,
                                QGroupBox, QFileDialog, QLabel, QComboBox, 
-                               QCheckBox, QSpinBox, QRadioButton, QButtonGroup)
+                               QCheckBox, QSpinBox, QRadioButton, QButtonGroup,
+                               QProgressBar)
+from PyQt6.QtCore import Qt
 from threads.resolution_thread import ResolutionThread
 from core.resolution_changer import ResolutionChanger
 import os
@@ -38,11 +40,11 @@ class ResolutionTab(QWidget):
         file_layout.addLayout(btn_layout)
         
         self.label_file = QLabel("No hay archivo seleccionado")
-        self.label_file.setStyleSheet("padding: 10px; background-color: #f0f0f0;")
+        self.label_file.setProperty("class", "file_label")
         file_layout.addWidget(self.label_file)
         
         self.label_current_res = QLabel("")
-        self.label_current_res.setStyleSheet("padding: 5px; color: #1976D2; font-weight: bold;")
+        self.label_current_res.setProperty("class", "info_label")
         file_layout.addWidget(self.label_current_res)
         
         file_group.setLayout(file_layout)
@@ -127,8 +129,23 @@ class ResolutionTab(QWidget):
         self.btn_process.clicked.connect(self.change_resolution)
         self.btn_process.setMinimumHeight(50)
         self.btn_process.setEnabled(False)
-        self.btn_process.setStyleSheet("font-size: 14px; font-weight: bold; background-color: #FF9800; color: white;")
+        self.btn_process.setProperty("class", "warning_btn")
+        self.btn_process.setProperty("class", "warning_btn")
         layout.addWidget(self.btn_process)
+        
+        # ProgressBar
+        status_layout = QVBoxLayout()
+        self.label_status = QLabel("Listo")
+        self.label_status.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        status_layout.addWidget(self.label_status)
+        
+        self.progress_bar = QProgressBar()
+        self.progress_bar.setRange(0, 100)
+        self.progress_bar.setValue(0)
+        self.progress_bar.setTextVisible(True)
+        status_layout.addWidget(self.progress_bar)
+        
+        layout.addLayout(status_layout)
         
         layout.addStretch()
         self.setLayout(layout)
@@ -214,6 +231,8 @@ class ResolutionTab(QWidget):
         maintain_aspect = self.check_maintain_aspect.isChecked()
         
         self.btn_process.setEnabled(False)
+        self.label_status.setText("Cambiando resolución...")
+        self.progress_bar.setValue(0)
         
         # Crear thread
         self.resolution_thread = ResolutionThread(
@@ -246,10 +265,12 @@ class ResolutionTab(QWidget):
     
     def update_progress(self, value):
         """Actualiza progreso"""
+        self.progress_bar.setValue(value)
         if self.parent_window:
             self.parent_window.update_progress(value)
     
     def log(self, message):
         """Log"""
+        self.label_status.setText(message)
         if self.parent_window:
             self.parent_window.log(message)

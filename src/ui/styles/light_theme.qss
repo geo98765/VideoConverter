@@ -1,0 +1,285 @@
+/* Light Theme - Clean Modern */
+* {
+    font-family: 'Segoe UI', 'Roboto', sans-serif;
+    font-size: 14px;
+    color: #333333;
+}
+
+QMainWindow, QWidget {
+    background-color: #F3F4F6; /* Lighter background */
+}
+
+/* --- SIDEBAR --- */
+QWidget#sidebar {
+    background-color: #FFFFFF;
+    border-right: 1px solid #E5E7EB;
+}
+QLabel#sidebar_title {
+    font-size: 18px; 
+    font-weight: 900; 
+    color: #2563EB; /* Strong Blue */
+    padding: 10px;
+}
+QFrame#sidebar_line {
+    background-color: #E5E7EB;
+}
+QLabel[class="sidebar_section_label"] {
+    color: #6B7280; 
+    font-size: 11px; 
+    font-weight: bold; 
+    padding-left: 10px;
+}
+
+/* Sidebar Buttons */
+QPushButton[class="sidebar_btn"] {
+    text-align: left;
+    padding-left: 20px;
+    border: none;
+    border-radius: 8px;
+    background-color: transparent;
+    font-size: 15px;
+    color: #4B5563;
+}
+QPushButton[class="sidebar_btn"]:hover {
+    background-color: #F9FAFB;
+}
+QPushButton[class="sidebar_btn"]:checked {
+    background-color: #EFF6FF; /* Light Blue */
+    color: #2563EB;
+    font-weight: bold;
+    border-left: 4px solid #2563EB;
+    border-top-left-radius: 4px;
+    border-bottom-left-radius: 4px;
+}
+
+QPushButton[class="sidebar_action_btn"] {
+    background-color: #E5E7EB;
+    border-radius: 15px;
+    padding: 10px;
+    font-weight: bold;
+    color: #374151;
+}
+QPushButton[class="sidebar_action_btn"]:hover {
+    background-color: #D1D5DB;
+}
+
+/* --- CARDS --- */
+QFrame[class="dashboard_card"] {
+    background-color: #FFFFFF; 
+    border-radius: 12px;
+    border: 1px solid #E5E7EB;
+}
+QFrame[class="dashboard_card"]:hover {
+    background-color: #FFFFFF;
+    border: 1px solid #2563EB;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+}
+QLabel[class="card_icon"] {
+    font-size: 32px; 
+    background: transparent; 
+    border: none;
+    color: #333; /* For emojis if needed */
+}
+QLabel[class="card_title"] {
+    font-size: 16px; 
+    font-weight: bold; 
+    color: #111827; 
+    background: transparent; 
+    border: none;
+}
+QLabel[class="card_desc"] {
+    font-size: 12px; 
+    color: #6B7280; 
+    background: transparent; 
+    border: none;
+}
+
+/* --- VIEWS HEADERS --- */
+QLabel#view_title {
+    font-size: 32px; 
+    font-weight: bold; 
+    color: #2563EB;
+}
+QLabel#view_subtitle {
+    font-size: 16px; 
+    color: #6B7280; 
+    margin-bottom: 30px;
+}
+
+/* --- GENERAL WIDGETS --- */
+
+/* GroupBox */
+QGroupBox {
+    border: 1px solid #E5E7EB;
+    border-radius: 8px;
+    margin-top: 24px;
+    background-color: #FFFFFF;
+}
+QGroupBox::title {
+    subcontrol-origin: margin;
+    subcontrol-position: top left;
+    padding: 0 5px;
+    color: #2563EB;
+    font-weight: bold;
+}
+
+/* Standard Buttons */
+QPushButton {
+    background-color: #FFFFFF;
+    border: 1px solid #D1D5DB;
+    border-radius: 6px;
+    padding: 8px 16px;
+    font-weight: 500;
+    color: #374151;
+}
+QPushButton:hover {
+    background-color: #F9FAFB;
+    border-color: #9CA3AF;
+}
+QPushButton:pressed {
+    background-color: #E5E7EB;
+}
+QPushButton:disabled {
+    background-color: #F3F4F6;
+    color: #9CA3AF;
+    border: 1px solid #E5E7EB;
+}
+
+/* Accent Button */
+QPushButton[class="accent"] {
+    background-color: #2563EB;
+    color: #FFFFFF;
+    font-weight: bold;
+    border: none;
+}
+QPushButton[class="accent"]:hover {
+    background-color: #1D4ED8;
+}
+
+/* Inputs */
+QLineEdit, QTextEdit, QSpinBox, QComboBox {
+    background-color: #FFFFFF;
+    border: 1px solid #D1D5DB;
+    border-radius: 4px;
+    padding: 6px;
+    color: #111827;
+    selection-background-color: #2563EB;
+    selection-color: #FFFFFF;
+}
+QLineEdit:focus, QTextEdit:focus, QSpinBox:focus, QComboBox:focus {
+    border: 1px solid #2563EB;
+}
+
+/* Table Widget */
+QTableWidget {
+    background-color: #FFFFFF;
+    border: 1px solid #E5E7EB;
+    gridline-color: #F3F4F6;
+    border-radius: 4px;
+    color: #111827;
+}
+QTableWidget::item:selected {
+    background-color: #EFF6FF;
+    color: #1E3A8A;
+}
+QHeaderView::section {
+    background-color: #F9FAFB;
+    padding: 6px;
+    border: none;
+    border-bottom: 1px solid #E5E7EB;
+    font-weight: bold;
+    color: #374151;
+}
+
+/* ProgressBar */
+QProgressBar {
+    border: 1px solid #E5E7EB;
+    border-radius: 5px;
+    text-align: center;
+    background-color: #E2E8F0;
+    color: #111827;
+}
+QProgressBar::chunk {
+    background-color: #2563EB;
+    border-radius: 4px;
+}
+
+/* Tabs */
+QTabWidget::pane {
+    border: 1px solid #E5E7EB;
+    border-radius: 4px;
+}
+QTabBar::tab {
+    background: #F3F4F6;
+    border: 1px solid #E5E7EB;
+    padding: 8px 12px;
+    border-top-left-radius: 4px;
+    border-top-right-radius: 4px;
+    margin-right: 2px;
+    color: #4B5563;
+}
+/* --- UTILITY CLASSES --- */
+
+/* Action Buttons */
+QPushButton[class="primary_btn"] {
+    background-color: #2563EB; /* Blue */
+    color: #FFFFFF;
+    border: none;
+    font-weight: bold;
+}
+QPushButton[class="primary_btn"]:hover {
+    background-color: #1D4ED8;
+}
+
+QPushButton[class="success_btn"] {
+    background-color: #16A34A; /* Green */
+    color: #FFFFFF;
+    border: none;
+    font-weight: bold;
+}
+QPushButton[class="success_btn"]:hover {
+    background-color: #15803D;
+}
+
+QPushButton[class="warning_btn"] {
+    background-color: #D97706; /* Amber/Orange */
+    color: #FFFFFF;
+    border: none;
+    font-weight: bold;
+}
+QPushButton[class="warning_btn"]:hover {
+    background-color: #B45309;
+}
+
+QPushButton[class="danger_btn"] {
+    background-color: #DC2626; /* Red */
+    color: #FFFFFF;
+    border: none;
+    font-weight: bold;
+}
+QPushButton[class="danger_btn"]:hover {
+    background-color: #B91C1C;
+}
+
+/* Labels */
+QLabel[class="file_label"] {
+    background-color: #F3F4F6;
+    padding: 10px;
+    border-radius: 4px;
+    border: 1px solid #E5E7EB;
+    color: #374151;
+}
+
+QLabel[class="info_label"] {
+    color: #2563EB;
+    font-weight: bold;
+    padding: 5px;
+}
+
+QLabel[class="note_label"] {
+    background-color: #FEF3C7; /* Light Yellow */
+    color: #92400E;
+    padding: 10px;
+    border-radius: 4px;
+    border: 1px solid #FCD34D;
+}

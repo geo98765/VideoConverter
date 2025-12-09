@@ -30,7 +30,7 @@ class DeviceProfileTab(QWidget):
         file_layout.addWidget(btn_select)
         
         self.label_file = QLabel("No hay archivo seleccionado")
-        self.label_file.setStyleSheet("padding: 10px; background-color: #f0f0f0;")
+        self.label_file.setProperty("class", "file_label")
         file_layout.addWidget(self.label_file)
         
         file_group.setLayout(file_layout)
@@ -69,7 +69,7 @@ class DeviceProfileTab(QWidget):
         self.btn_convert.clicked.connect(self.convert_video)
         self.btn_convert.setMinimumHeight(50)
         self.btn_convert.setEnabled(False)
-        self.btn_convert.setStyleSheet("font-size: 14px; font-weight: bold; background-color: #009688; color: white;")
+        self.btn_convert.setProperty("class", "success_btn")
         layout.addWidget(self.btn_convert)
         
         layout.addStretch()

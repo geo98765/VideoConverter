@@ -29,7 +29,7 @@ class SubtitleTab(QWidget):
         video_layout.addWidget(btn_select_video)
         
         self.label_video = QLabel("No hay video seleccionado")
-        self.label_video.setStyleSheet("padding: 10px; background-color: #f0f0f0;")
+        self.label_video.setProperty("class", "file_label")
         video_layout.addWidget(self.label_video)
         
         video_group.setLayout(video_layout)
@@ -65,7 +65,7 @@ class SubtitleTab(QWidget):
         subtitle_layout.addWidget(btn_select_subtitle)
         
         self.label_subtitle = QLabel("No hay subtítulo seleccionado")
-        self.label_subtitle.setStyleSheet("padding: 10px; background-color: #f0f0f0;")
+        self.label_subtitle.setProperty("class", "file_label")
         subtitle_layout.addWidget(self.label_subtitle)
         
         subtitle_group.setLayout(subtitle_layout)
@@ -93,7 +93,7 @@ class SubtitleTab(QWidget):
         self.btn_process.clicked.connect(self.process)
         self.btn_process.setMinimumHeight(50)
         self.btn_process.setEnabled(False)
-        self.btn_process.setStyleSheet("font-size: 14px; font-weight: bold; background-color: #3F51B5; color: white;")
+        self.btn_process.setProperty("class", "primary_btn")
         layout.addWidget(self.btn_process)
         
         layout.addStretch()

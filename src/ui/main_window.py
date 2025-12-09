@@ -1,240 +1,186 @@
 """Ventana principal de la aplicación"""
 from PyQt6.QtWidgets import (QMainWindow, QWidget, QVBoxLayout, QHBoxLayout,
-                               QPushButton, QLabel, QFileDialog, QTextEdit,
-                               QProgressBar, QGroupBox, QMessageBox, QTabWidget,
-                               QTableWidgetItem)
-from PyQt6.QtGui import QColor
+                               QPushButton, QLabel, QProgressBar, QStackedWidget, 
+                               QMessageBox, QSystemTrayIcon, QFileDialog, QTextEdit,
+                               QTableWidgetItem, QScrollArea, QFrame)
 from PyQt6.QtCore import Qt
+from PyQt6.QtGui import QIcon, QAction
 
-from ui.tabs.simple_config_tab import SimpleConfigTab
-from ui.tabs.advanced_config_tab import AdvancedConfigTab
+# Infrastructure
+from ui.styles.theme_manager import ThemeManager
+from ui.components.sidebar import Sidebar
+
+# Views
+from ui.views.dashboard_home import DashboardHome
+from ui.views.conversion_view import ConversionView
+from ui.views.tools_view import ToolsView
+from ui.views.analysis_view import AnalysisView
 from ui.tabs.queue_tab import QueueTab
+
+# Logic
 from threads.queue_processor_thread import QueueProcessorThread
 from models.video_file import VideoFile
 from utils.gpu_detector import detect_nvenc, get_gpu_info
 
 class MainWindow(QMainWindow):
-    """Ventana principal de la aplicación"""
+    """Ventana principal de la aplicación - Rediseño Moderno"""
     
     def __init__(self):
         super().__init__()
+        # 1. Initialize State Variables FIRST
         self.video_queue = []
+        self.queue_panels = []  # Lista de paneles registrados para sincronizar
         self.queue_thread = None
         self.nvenc_available = False
+        
+        # 2. Initialize Infrastructure
+        self.theme_manager = ThemeManager()
+        self.theme_manager.theme_changed.connect(self.on_theme_changed)
+        
+        # 3. Initialize UI
         self.init_ui()
         self.detect_hardware()
-    
-    def init_ui(self):
-        """Inicializa la interfaz de usuario"""
-        self.setWindowTitle("Video Tool Pro - Conversor y Reparador")
-        self.setGeometry(100, 100, 1100, 850)
         
+        # 4. Apply default theme
+        self.theme_manager.set_theme("dark")
+
+    def init_ui(self):
+        """Inicializa la interfaz de usuario moderna"""
+        self.setWindowTitle("Video Tool Pro - Dashboard")
+        self.setGeometry(100, 100, 1280, 800)
+        self.setMinimumSize(624, 468) # Configuración de tamaño mínimo
+        
+        # Main Layout
         central_widget = QWidget()
         self.setCentralWidget(central_widget)
-        
-        main_layout = QVBoxLayout()
+        main_layout = QHBoxLayout()
+        main_layout.setContentsMargins(0, 0, 0, 0)
+        main_layout.setSpacing(0)
         central_widget.setLayout(main_layout)
         
-        # Título
-        title = QLabel("Video Tool Pro - Conversor y Reparador de Videos")
-        title.setStyleSheet("font-size: 24px; font-weight: bold; padding: 10px;")
-        title.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        main_layout.addWidget(title)
+        # 1. Sidebar (Left)
+        self.sidebar = Sidebar()
+        self.sidebar.page_changed.connect(self.switch_to_page)
+        self.sidebar.theme_btn.clicked.connect(self.theme_manager.toggle_theme)
+        main_layout.addWidget(self.sidebar)
         
-        # Información del sistema
-        system_group = QGroupBox("Información del Sistema")
-        system_layout = QVBoxLayout()
-        self.label_gpu = QLabel("Detectando hardware...")
-        system_layout.addWidget(self.label_gpu)
-        system_group.setLayout(system_layout)
-        main_layout.addWidget(system_group)
+        # 2. Main Content (Right)
+        content_layout = QVBoxLayout()
+        content_layout.setContentsMargins(0, 0, 0, 0)
+        content_layout.setSpacing(0)
         
-        # Tabs
-        # Tabs
-        self.tabs = QTabWidget()
+        # 2a. Stacked Pages
+        self.pages = QStackedWidget()
         
-        self.simple_tab = SimpleConfigTab(self)
-        self.tabs.addTab(self.simple_tab, "⚙️ Configuración Recomendada")
-        
-        self.advanced_tab = AdvancedConfigTab(self)
-        self.tabs.addTab(self.advanced_tab, "🔧 Configuración Avanzada")
-        
-        self.queue_tab = QueueTab(self)
-        self.tabs.addTab(self.queue_tab, "📋 Cola de Videos")
-        
-        # NUEVOS TABS - FASE 1
-        from ui.tabs.analysis_tab import AnalysisTab
-        from ui.tabs.audio_extract_tab import AudioExtractTab
-        from ui.tabs.resolution_tab import ResolutionTab
-        from ui.tabs.compress_tab import CompressTab
-        from ui.tabs.join_tab import JoinTab
-        from ui.tabs.subtitle_tab import SubtitleTab
-        from ui.tabs.corruption_tab import CorruptionTab
-        from ui.tabs.device_profile_tab import DeviceProfileTab
-        from ui.tabs.multi_format_tab import MultiFormatTab
-        from ui.tabs.pausable_tab import PausableTab
+        # Helper to make pages scrollable
+        def wrap_scroll(widget):
+            from ui.components.smooth_scroll_area import SmoothScrollArea
+            scroll = SmoothScrollArea()
+            scroll.setWidgetResizable(True)
+            scroll.setWidget(widget)
+            scroll.setFrameShape(QFrame.Shape.NoFrame)
+            return scroll
 
-        self.profile_tab = DeviceProfileTab(self)
-        self.tabs.addTab(self.profile_tab, "📱 Perfiles de Dispositivo")
-        
-        self.multi_format_tab = MultiFormatTab(self)
-        self.tabs.addTab(self.multi_format_tab, "🎯 Múltiples Formatos")
-        
-        self.pausable_tab = PausableTab(self)
-        self.tabs.addTab(self.pausable_tab, "⏯️ Conversión Pausable")
-        
-        self.compress_tab = CompressTab(self)
-        self.tabs.addTab(self.compress_tab, "🗜️ Comprimir Video")
-        
-        self.join_tab = JoinTab(self)
-        self.tabs.addTab(self.join_tab, "🔗 Unir Videos")
-        
-        self.subtitle_tab = SubtitleTab(self)
-        self.tabs.addTab(self.subtitle_tab, "📝 Subtítulos")
-        
-        self.corruption_tab = CorruptionTab(self)
-        self.tabs.addTab(self.corruption_tab, "🔍 Detectar Corrupción")
 
-        self.analysis_tab = AnalysisTab(self)
-        self.tabs.addTab(self.analysis_tab, "🔍 Análisis de Video")
+
+        # Page 0: Dashboard
+        self.dashboard = DashboardHome(self)
+        self.pages.addWidget(wrap_scroll(self.dashboard))
         
-        self.audio_tab = AudioExtractTab(self)
-        self.tabs.addTab(self.audio_tab, "🎵 Extraer Audio")
+        # Page 1: Conversion
+        self.conversion_view = ConversionView(self)
+        self.pages.addWidget(wrap_scroll(self.conversion_view))
         
-        self.resolution_tab = ResolutionTab(self)
-        self.tabs.addTab(self.resolution_tab, "📐 Cambiar Resolución")
-        main_layout.addWidget(self.tabs)
+        # Page 2: Tools
+        self.tools_view = ToolsView(self)
+        self.pages.addWidget(wrap_scroll(self.tools_view))
         
-        # Progreso
-        progress_group = QGroupBox("Progreso")
-        progress_layout = QVBoxLayout()
+        # Page 3: Analysis
+        self.analysis_view = AnalysisView(self)
+        self.pages.addWidget(wrap_scroll(self.analysis_view))
         
-        self.label_current_file = QLabel("Esperando...")
-        progress_layout.addWidget(self.label_current_file)
+        # Page 4: Settings
+        from ui.views.settings_view import SettingsView
+        self.settings_view = SettingsView(self)
+        self.pages.addWidget(wrap_scroll(self.settings_view))
+        
+        # Page 5: Queue (Accessible via Dashboard)
+        # We keep this for now but it might be redundant with global panel
+        self.queue_view = QueueTab(self)
+        self.pages.addWidget(wrap_scroll(self.queue_view))
+        
+        content_layout.addWidget(self.pages)
+        
+        # Global Progress Bar (Bottom Strip)
+        self.status_bar_layout = QHBoxLayout()
+        self.status_bar_layout.setContentsMargins(10, 5, 10, 5)
+        self.status_bar_layout.setSpacing(10)
+        
+        self.label_status = QLabel("Listo")
+        self.label_status.setStyleSheet("color: #6C7086; font-size: 11px;")
+        self.status_bar_layout.addWidget(self.label_status)
         
         self.progress_bar = QProgressBar()
+        self.progress_bar.setFixedHeight(8)
+        self.progress_bar.setTextVisible(False)
+        self.progress_bar.setRange(0, 100)
         self.progress_bar.setValue(0)
-        progress_layout.addWidget(self.progress_bar)
+        self.progress_bar.setVisible(False) # Hidden by default
+        self.status_bar_layout.addWidget(self.progress_bar)
         
-        progress_group.setLayout(progress_layout)
-        main_layout.addWidget(progress_group)
-        
-        # Botones de control
-        control_layout = QHBoxLayout()
-        
-        self.btn_process_queue = QPushButton("▶️ Procesar Cola")
-        self.btn_process_queue.clicked.connect(self.process_queue)
-        self.btn_process_queue.setMinimumHeight(50)
-        self.btn_process_queue.setStyleSheet("font-size: 14px; font-weight: bold; background-color: #4CAF50; color: white;")
-        control_layout.addWidget(self.btn_process_queue)
-        
-        self.btn_cancel = QPushButton("❌ Cancelar")
+        # Queue Control Buttons (Show only when processing?)
+        self.btn_cancel = QPushButton("Cancelar")
+        self.btn_cancel.setFixedSize(80, 24)
+        self.btn_cancel.setProperty("class", "danger_btn")
         self.btn_cancel.clicked.connect(self.cancel_process)
-        self.btn_cancel.setMinimumHeight(50)
         self.btn_cancel.setEnabled(False)
-        self.btn_cancel.setStyleSheet("font-size: 14px; background-color: #f44336; color: white;")
-        control_layout.addWidget(self.btn_cancel)
+        self.btn_cancel.setVisible(False) # Hidden by default
+        self.status_bar_layout.addWidget(self.btn_cancel)
         
-        main_layout.addLayout(control_layout)
+        content_layout.addLayout(self.status_bar_layout)
         
-        # Logs
-        log_label = QLabel("📝 Registro de actividad:")
-        main_layout.addWidget(log_label)
+        main_layout.addLayout(content_layout)
+
+        # Shortcuts logic mapping
+        # Maps old references to new locations
+        self.unified_tab = self.conversion_view.unified_tab
+        self.simple_tab = self.conversion_view.unified_tab 
+        # self.queue_tab logic should now point to... wait, we have both view and panel.
+        # Let's keep queue_tab pointing to queue_view for legacy references (like accessing table_queue)
+        # BUT we should sync them or prefer one.
+        # Let's update methods to use queue_panel primarily.
+        self.queue_tab = self.queue_view 
+
+    def register_queue_panel(self, panel):
+        """Registra un panel de cola para mantenerlo sincronizado"""
+        self.queue_panels.append(panel)
+        # Sincronizar estado inicial
+        panel.request_clear.connect(self.clear_queue)
+        panel.request_remove.connect(self.remove_from_queue_index)
         
-        self.text_log = QTextEdit()
-        self.text_log.setReadOnly(True)
-        self.text_log.setMaximumHeight(180)
-        main_layout.addWidget(self.text_log)
-        
-        self.btn_clear_log = QPushButton("🗑️ Limpiar registro")
-        self.btn_clear_log.clicked.connect(self.clear_log)
-        main_layout.addWidget(self.btn_clear_log)
-    
-    def detect_hardware(self):
-        """Detecta hardware disponible"""
-        self.nvenc_available = detect_nvenc()
-        gpus = get_gpu_info()
-        
-        if self.nvenc_available and gpus:
-            gpu_text = f"✅ NVENC disponible - GPU: {gpus[0]}"
-            self.simple_tab.check_use_gpu.setEnabled(True)
-        else:
-            gpu_text = "⚠️ NVENC no disponible - Solo se usará CPU"
-            self.simple_tab.check_use_gpu.setEnabled(False)
-            self.simple_tab.check_use_gpu.setChecked(False)
-        
-        self.label_gpu.setText(gpu_text)
-        self.log(gpu_text)
-    
-    def add_single_file(self):
-        """Agrega un archivo a la cola"""
-        file_path, _ = QFileDialog.getOpenFileName(
-            self,
-            "Seleccionar video",
-            "",
-            "Videos (*.mp4 *.avi *.mkv *.mov *.flv *.wmv *.webm *.m4v);;Todos (*.*)"
-        )
-        if file_path:
-            self.add_file_to_queue(file_path)
-    
-    def add_multiple_files(self):
-        """Agrega múltiples archivos a la cola"""
-        file_paths, _ = QFileDialog.getOpenFileNames(
-            self,
-            "Seleccionar videos",
-            "",
-            "Videos (*.mp4 *.avi *.mkv *.mov *.flv *.wmv *.webm *.m4v);;Todos (*.*)"
-        )
-        for file_path in file_paths:
-            self.add_file_to_queue(file_path)
-    
-    def add_file_to_queue(self, file_path):
-        """Agrega un archivo a la cola"""
-        # Verificar duplicados
+        # Poblar con datos actuales si hay
         for video in self.video_queue:
-            if video.path == file_path:
-                self.log(f"⚠️ Ya está en cola: {video.name}")
-                return
-        
-        video_file = VideoFile(file_path)
-        self.video_queue.append(video_file)
-        
-        # Agregar a tabla
-        row = self.queue_tab.table_queue.rowCount()
-        self.queue_tab.table_queue.insertRow(row)
-        self.queue_tab.table_queue.setItem(row, 0, QTableWidgetItem(video_file.name))
-        self.queue_tab.table_queue.setItem(row, 1, QTableWidgetItem(video_file.get_size_formatted()))
-        self.queue_tab.table_queue.setItem(row, 2, QTableWidgetItem("Pendiente"))
-        self.queue_tab.table_queue.setItem(row, 3, QTableWidgetItem(file_path))
-        
-        self.queue_tab.update_count(len(self.video_queue))
-        self.log(f"✅ Agregado: {video_file.name}")
-    
-    def clear_queue(self):
-        """Limpia la cola"""
-        if self.video_queue:
-            reply = QMessageBox.question(
-                self, "Confirmar", "¿Limpiar cola?",
-                QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No
-            )
-            if reply == QMessageBox.StandardButton.Yes:
-                self.video_queue.clear()
-                self.queue_tab.table_queue.setRowCount(0)
-                self.queue_tab.update_count(0)
-                self.log("🗑️ Cola limpiada")
-    
-    def remove_selected_from_queue(self):
-        """Quita elemento seleccionado"""
-        current_row = self.queue_tab.table_queue.currentRow()
-        if current_row >= 0:
-            file_name = self.queue_tab.table_queue.item(current_row, 0).text()
-            self.queue_tab.table_queue.removeRow(current_row)
-            self.video_queue.pop(current_row)
+            panel.add_row(video.name, video.get_size_formatted(), "Pendiente", video.path)
+        panel.update_count(len(self.video_queue))
+
+    def remove_from_queue_index(self, index):
+        """Elimina por índice (usado por paneles)"""
+        if index >= 0 and index < len(self.video_queue):
+            video = self.video_queue.pop(index)
+            
+            # Sincronizar TODOS los paneles
+            for p in self.queue_panels:
+                p.remove_row(index)
+                p.update_count(len(self.video_queue))
+            
+            # Sincronizar Tab Legacy
+            self.queue_tab.table_queue.removeRow(index)
             self.queue_tab.update_count(len(self.video_queue))
-            self.log(f"➖ Quitado: {file_name}")
-    
-    def process_queue(self):
-        """Procesa la cola"""
+            
+            self.log(f"➖ Quitado: {video.name}")
+
+    def process_queue_unified(self, settings):
+        """Procesa la cola con settings unificados"""
         if not self.video_queue:
             QMessageBox.warning(self, "Cola vacía", "No hay videos en la cola")
             return
@@ -242,23 +188,28 @@ class MainWindow(QMainWindow):
         if self.queue_thread and self.queue_thread.isRunning():
             QMessageBox.warning(self, "Procesando", "Ya hay un proceso en curso")
             return
-        
-        # Obtener configuración
-        encoder, preset, crf, output_format = self.simple_tab.get_encoder_settings()
-        output_folder = self.simple_tab.get_output_folder()
+            
+        encoder = settings["encoder"]
+        preset = settings["preset"]
+        crf = settings["crf"]
+        output_format = settings["format"]
+        output_folder = settings["output_folder"]
         
         reply = QMessageBox.question(
-            self, "Confirmar",
+            self, "Confirmar Conversión",
             f"¿Procesar {len(self.video_queue)} video(s)?\n\n"
-            f"Codificador: {encoder}\nCRF: {crf}\nFormato: {output_format}",
+            f"Codificador: {encoder}\n"
+            f"Calidad (CRF): {crf}\n"
+            f"Formato: {output_format}",
             QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No
         )
         
         if reply == QMessageBox.StandardButton.No:
             return
         
-        self.btn_process_queue.setEnabled(False)
         self.btn_cancel.setEnabled(True)
+        self.btn_cancel.setVisible(True)
+        self.progress_bar.setVisible(True)
         
         self.queue_thread = QueueProcessorThread(
             self.video_queue.copy(),
@@ -274,58 +225,144 @@ class MainWindow(QMainWindow):
         self.queue_thread.item_finished.connect(self.queue_item_finished)
         self.queue_thread.all_finished.connect(self.queue_all_finished)
         self.queue_thread.current_file.connect(self.update_current_file)
+        # Connect new detailed progress signal
+        self.queue_thread.progress_update.connect(self.update_queue_progress)
         
         self.progress_bar.setValue(0)
         self.queue_thread.start()
-    
-    def queue_item_finished(self, index, success, message):
-        """Item procesado"""
-        if index < self.queue_tab.table_queue.rowCount():
-            status_item = QTableWidgetItem(message)
-            if success:
-                status_item.setForeground(QColor(0, 128, 0))
-            else:
-                status_item.setForeground(QColor(255, 0, 0))
-            self.queue_tab.table_queue.setItem(index, 2, status_item)
-    
-    def queue_all_finished(self, total, successful):
-        """Cola completada"""
-        self.btn_process_queue.setEnabled(True)
-        self.btn_cancel.setEnabled(False)
-        self.label_current_file.setText("Completado")
         
-        QMessageBox.information(
-            self, "Completado",
-            f"Procesados {successful}/{total} videos exitosamente"
-        )
+        # Remove auto-navigation distinct from user request
+        # self.toggle_queue_panel()
+
+    def switch_to_page(self, index):
+        self.pages.setCurrentIndex(index)
+        
+    def switch_to_tool(self, tool_name):
+        # Switch to Tools page (Index 2)
+        self.switch_to_page(2)
+        # Select specific tool inside ToolsView
+        self.tools_view.open_by_name(tool_name)
+
+    def toggle_queue_panel(self):
+        # Simply switch to the Queue Page (Index 5)
+        self.pages.setCurrentIndex(5)
+
+    def on_theme_changed(self, theme_name):
+        self.label_status.setText(f"Tema cambiado a {theme_name}")
+
+    def detect_hardware(self):
+        """Detecta hardware disponible"""
+        self.nvenc_available = detect_nvenc()
+        gpus = get_gpu_info()
+        
+        if self.nvenc_available and gpus:
+            gpu_text = f"✅ NVENC disponible - GPU: {gpus[0]}"
+            self.simple_tab.check_gpu.setEnabled(True)
+        else:
+            gpu_text = "⚠️ NVENC no disponible - Solo se usará CPU"
+            self.simple_tab.check_gpu.setEnabled(False)
+            self.simple_tab.check_gpu.setChecked(False)
+        
+        self.label_status.setText(gpu_text)
     
-    def update_current_file(self, filename):
-        """Actualiza archivo actual"""
-        self.label_current_file.setText(f"Procesando: {filename}")
-    
-    def cancel_process(self):
-        """Cancela proceso"""
-        if self.queue_thread and self.queue_thread.isRunning():
-            reply = QMessageBox.question(
-                self, "Cancelar", "¿Cancelar procesamiento?",
-                QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No
-            )
-            if reply == QMessageBox.StandardButton.Yes:
-                self.queue_thread.stop()
-                self.log("⚠️ Cancelando...")
-    
-    def update_progress(self, value):
-        """Actualiza progreso"""
-        self.progress_bar.setValue(value)
+    # --- LOGIC COPIED AND ADAPTED FROM ORIGINAL MAIN WINDOW ---
     
     def log(self, message):
-        """Agrega log"""
-        self.text_log.append(message)
-        self.text_log.verticalScrollBar().setValue(
-            self.text_log.verticalScrollBar().maximum()
-        )
+        """Centralized logging (now status bar + potential detailed log)"""
+        self.label_status.setText(message)
     
-    def clear_log(self):
-        """Limpia log"""
-        self.text_log.clear()
-        self.log("📋 Registro limpiado")
+    def clear_queue(self):
+        self.video_queue.clear()
+        
+        # Clear ALL panels
+        for p in self.queue_panels:
+            p.clear_table()
+            p.update_count(0)
+            
+        # Legacy
+        self.queue_tab.table_queue.setRowCount(0)
+        self.queue_tab.update_count(0)
+        
+        self.log("Cola limpiada")
+
+    def add_single_file(self):
+        file_path, _ = QFileDialog.getOpenFileName(
+            self, 
+            "Seleccionar Video", 
+            "", 
+            "Videos (*.mp4 *.avi *.mkv *.mov *.flv *.wmv *.webm *.m4v);;Todos (*.*)"
+        )
+        if file_path:
+            self.add_file_to_queue(file_path)
+
+    def add_multiple_files(self):
+        files, _ = QFileDialog.getOpenFileNames(
+            self, 
+            "Seleccionar Videos", 
+            "", 
+            "Videos (*.mp4 *.avi *.mkv *.mov *.flv *.wmv *.webm *.m4v);;Todos (*.*)"
+        )
+        if files:
+            for f in files:
+                self.add_file_to_queue(f)
+
+    def add_file_to_queue(self, file_path):
+        """Agrega un archivo a la cola y actualiza TODOS los paneles"""
+        # Checar duplicados
+        for video in self.video_queue:
+            if video.path == file_path:
+                return
+
+        video = VideoFile(file_path)
+        self.video_queue.append(video)
+        
+        # Actualizar TODOS los paneles
+        for p in self.queue_panels:
+            p.add_row(video.name, video.get_size_formatted(), "Pendiente", video.path)
+            p.update_count(len(self.video_queue))
+            
+        # Actualizar Legacy Tab
+        self.queue_tab.add_video_to_table(video)
+        self.queue_tab.update_count(len(self.video_queue))
+        
+        self.log(f"➕ Agregado: {video.name}")
+
+    def update_progress(self, val):
+        self.progress_bar.setValue(val)
+
+    def update_queue_progress(self, index, val):
+        """Actualiza el progreso de una fila específica (item de cola)"""
+        # Actualizar TODOS los paneles
+        for p in self.queue_panels:
+            p.update_progress(index, val)
+
+    def update_current_file(self, filename):
+        # Update Status in ALL panels?
+        # This is tricky because we'd need to find the correct row index for this file
+        # For simplicity, we can update status bar
+        self.label_status.setText(f"Procesando: {filename}")
+        
+    def queue_item_finished(self, file_idx, success, message):
+        """Actualiza el estado de un item en TODOS los paneles"""
+        status_text = "Completado" if success else "Error"
+        qt_color = Qt.GlobalColor.green if success else Qt.GlobalColor.red
+            
+        # Actualizar TODOS los paneles
+        for p in self.queue_panels:
+            p.update_status(file_idx, status_text, qt_color)
+            
+        # Legacy update (might behave differently)
+        # self.queue_tab.update_status(file_idx, status_text)
+    
+    def queue_all_finished(self):
+        self.progress_bar.setVisible(False)
+        self.btn_cancel.setVisible(False)
+        self.label_status.setText("✅ Todos los procesos terminados")
+        QMessageBox.information(self, "Proceso Completado", "Todos los videos han sido procesados.")
+        self.is_processing = False
+
+    def cancel_process(self):
+        if self.queue_thread and self.queue_thread.isRunning():
+            self.queue_thread.stop()
+            self.log("🛑 Cancelando proceso...")
+            self.btn_cancel.setEnabled(False)

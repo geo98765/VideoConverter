@@ -1,7 +1,8 @@
 """Tab para unir múltiples videos"""
 from PyQt6.QtWidgets import (QWidget, QVBoxLayout, QHBoxLayout, QPushButton,
                                QGroupBox, QFileDialog, QLabel, QComboBox,
-                               QListWidget, QSpinBox)
+                               QListWidget, QSpinBox, QFrame, QProgressBar)
+from PyQt6.QtCore import Qt
 from threads.join_thread import JoinThread
 import os
 
@@ -16,7 +17,25 @@ class JoinTab(QWidget):
         self.init_ui()
     
     def init_ui(self):
-        layout = QVBoxLayout()
+        # Main container with centering
+        main_layout = QVBoxLayout()
+        main_layout.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        main_layout.setContentsMargins(20, 20, 20, 20)
+        
+        # Card Frame
+        card = QFrame()
+        card.setProperty("class", "dashboard_card")
+        card.setFixedWidth(700)
+        
+        card_layout = QVBoxLayout(card)
+        card_layout.setSpacing(20)
+        card_layout.setContentsMargins(30, 30, 30, 30)
+        
+        # Title
+        title = QLabel("Unir Videos")
+        title.setStyleSheet("font-size: 20px; font-weight: bold; margin-bottom: 10px;")
+        title.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        card_layout.addWidget(title)
         
         # Lista de videos
         list_group = QGroupBox("Videos a Unir")
@@ -24,16 +43,19 @@ class JoinTab(QWidget):
         
         btn_layout = QHBoxLayout()
         btn_add = QPushButton("➕ Agregar Videos")
+        btn_add.setProperty("class", "secondary_btn")
         btn_add.clicked.connect(self.add_videos)
         btn_add.setMinimumHeight(40)
         btn_layout.addWidget(btn_add)
         
-        btn_remove = QPushButton("➖ Quitar Seleccionado")
+        btn_remove = QPushButton("➖ Quitar")
+        btn_remove.setProperty("class", "secondary_btn")
         btn_remove.clicked.connect(self.remove_selected)
         btn_remove.setMinimumHeight(40)
         btn_layout.addWidget(btn_remove)
         
-        btn_clear = QPushButton("🗑️ Limpiar Lista")
+        btn_clear = QPushButton("🗑️ Limpiar")
+        btn_clear.setProperty("class", "secondary_btn")
         btn_clear.clicked.connect(self.clear_list)
         btn_clear.setMinimumHeight(40)
         btn_layout.addWidget(btn_clear)
@@ -41,7 +63,7 @@ class JoinTab(QWidget):
         list_layout.addLayout(btn_layout)
         
         self.list_videos = QListWidget()
-        self.list_videos.setMinimumHeight(200)
+        self.list_videos.setMinimumHeight(150)
         list_layout.addWidget(self.list_videos)
         
         # Botones de orden
@@ -54,14 +76,14 @@ class JoinTab(QWidget):
         btn_down.clicked.connect(self.move_down)
         order_layout.addWidget(btn_down)
         
-        order_layout.addWidget(QLabel("(El orden importa - los videos se unirán en este orden)"))
+        order_layout.addWidget(QLabel("(Orden de unión)"))
         list_layout.addLayout(order_layout)
         
         list_group.setLayout(list_layout)
-        layout.addWidget(list_group)
+        card_layout.addWidget(list_group)
         
         # Opciones de codificación
-        encoding_group = QGroupBox("Opciones de Codificación")
+        encoding_group = QGroupBox("Opciones de Unión")
         encoding_layout = QVBoxLayout()
         
         encoder_layout = QHBoxLayout()
@@ -69,7 +91,6 @@ class JoinTab(QWidget):
         self.combo_encoder = QComboBox()
         self.combo_encoder.addItems(["libx264 (CPU)", "h264_nvenc (GPU)", "hevc_nvenc (GPU)"])
         encoder_layout.addWidget(self.combo_encoder)
-        encoding_layout.addLayout(encoder_layout)
         
         quality_layout = QHBoxLayout()
         quality_layout.addWidget(QLabel("Calidad (CRF):"))
@@ -77,27 +98,45 @@ class JoinTab(QWidget):
         self.spin_crf.setRange(0, 51)
         self.spin_crf.setValue(23)
         quality_layout.addWidget(self.spin_crf)
+        
+        encoding_layout.addLayout(encoder_layout)
         encoding_layout.addLayout(quality_layout)
         
         encoding_group.setLayout(encoding_layout)
-        layout.addWidget(encoding_group)
+        card_layout.addWidget(encoding_group)
         
         # Botón de unión
         self.btn_join = QPushButton("🔗 Unir Videos")
         self.btn_join.clicked.connect(self.join_videos)
         self.btn_join.setMinimumHeight(50)
         self.btn_join.setEnabled(False)
-        self.btn_join.setStyleSheet("font-size: 14px; font-weight: bold; background-color: #00BCD4; color: white;")
-        layout.addWidget(self.btn_join)
+        self.btn_join.setProperty("class", "primary_btn")
+        self.btn_join.setCursor(Qt.CursorShape.PointingHandCursor)
+        card_layout.addWidget(self.btn_join)
         
-        layout.addStretch()
-        self.setLayout(layout)
+        # --- PROGRESS BAR (No Queue) ---
+        status_layout = QVBoxLayout()
+        
+        self.label_status = QLabel("Listo")
+        self.label_status.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        status_layout.addWidget(self.label_status)
+        
+        self.progress_bar = QProgressBar()
+        self.progress_bar.setRange(0, 100)
+        self.progress_bar.setValue(0)
+        self.progress_bar.setTextVisible(True)
+        status_layout.addWidget(self.progress_bar)
+        
+        card_layout.addLayout(status_layout)
+        
+        main_layout.addWidget(card)
+        self.setLayout(main_layout)
     
     def add_videos(self):
         """Agrega videos a la lista"""
         file_paths, _ = QFileDialog.getOpenFileNames(
             self,
-            "Seleccionar videos",
+            "Seleccionar Videos",
             "",
             "Videos (*.mp4 *.avi *.mkv *.mov *.flv *.wmv *.webm *.m4v);;Todos (*.*)"
         )
@@ -109,14 +148,16 @@ class JoinTab(QWidget):
                     self.parent_window.log(f"Agregado a unir: {os.path.basename(file_path)}")
         
         self.btn_join.setEnabled(len(self.video_files) >= 2)
-    
+
     def remove_selected(self):
         """Quita el video seleccionado"""
         current_row = self.list_videos.currentRow()
         if current_row >= 0:
+            removed_file = self.video_files.pop(current_row)
             self.list_videos.takeItem(current_row)
-            self.video_files.pop(current_row)
             self.btn_join.setEnabled(len(self.video_files) >= 2)
+            if self.parent_window:
+                self.parent_window.log(f"Removido de unir: {os.path.basename(removed_file)}")
     
     def clear_list(self):
         """Limpia la lista"""
@@ -179,6 +220,8 @@ class JoinTab(QWidget):
         crf = self.spin_crf.value()
         
         self.btn_join.setEnabled(False)
+        self.label_status.setText("Uniendo videos...")
+        self.progress_bar.setValue(0)
         
         # Crear thread
         self.join_thread = JoinThread(
@@ -208,10 +251,12 @@ class JoinTab(QWidget):
     
     def update_progress(self, value):
         """Actualiza progreso"""
+        self.progress_bar.setValue(value)
         if self.parent_window:
             self.parent_window.update_progress(value)
     
     def log(self, message):
         """Log"""
+        self.label_status.setText(message)
         if self.parent_window:
             self.parent_window.log(message)

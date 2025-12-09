@@ -38,7 +38,7 @@ class AnalysisTab(QWidget):
         file_layout.addLayout(btn_layout)
         
         self.label_file = QLabel("No hay archivo seleccionado")
-        self.label_file.setStyleSheet("padding: 10px; background-color: #f0f0f0;")
+        self.label_file.setProperty("class", "file_label")
         file_layout.addWidget(self.label_file)
         
         file_group.setLayout(file_layout)
@@ -55,7 +55,7 @@ class AnalysisTab(QWidget):
         
         # Estimaciones
         self.label_estimations = QLabel("")
-        self.label_estimations.setStyleSheet("padding: 10px; background-color: #e3f2fd; border-radius: 5px;")
+        self.label_estimations.setProperty("class", "note_label")
         self.label_estimations.setWordWrap(True)
         results_layout.addWidget(self.label_estimations)
         

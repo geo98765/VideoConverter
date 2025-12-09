@@ -59,14 +59,40 @@ class FFmpegWrapper:
                 'ffmpeg',
                 '-i', input_file,
                 '-c:v', encoder,
-                '-preset', preset,
-                '-crf', str(crf),
-                '-c:a', 'aac',
+            ]
+            
+            # Manejo específico par VP9 vs x264/nvenc
+            if 'libvpx' in encoder:
+                # VP9 usa -deadline en lugar de -preset
+                deadline = 'good'
+                if preset in ['ultrafast', 'superfast', 'veryfast']:
+                    deadline = 'realtime'
+                elif preset in ['slow', 'slower', 'veryslow']:
+                    deadline = 'best'
+                
+                cmd.extend(['-deadline', deadline])
+                cmd.extend(['-crf', str(crf)])
+                cmd.extend(['-b:v', '0']) # Necesario para CRF en VP9
+            else:
+                # x264/hevc standard parameters
+                cmd.extend(['-preset', preset])
+                cmd.extend(['-crf', str(crf)])
+            
+
+            
+            # Parametros de audio
+            # WebM prefiere Vorbis/Opus. MP4 usa AAC.
+            audio_codec = 'aac'
+            if output_file.lower().endswith('.webm'):
+                audio_codec = 'libvorbis'
+            
+            cmd.extend([
+                '-c:a', audio_codec,
                 '-b:a', '192k',
                 '-progress', 'pipe:2',  # Enviar progreso a stderr
                 output_file,
                 '-y'
-            ]
+            ])
             
             # Si es NVENC, agregar aceleración por hardware
             if 'nvenc' in encoder:

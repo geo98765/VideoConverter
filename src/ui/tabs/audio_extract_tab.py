@@ -1,7 +1,9 @@
 """Tab de extracción de audio"""
 from PyQt6.QtWidgets import (QWidget, QVBoxLayout, QHBoxLayout, QPushButton,
-                               QGroupBox, QFileDialog, QLabel, QComboBox, QSpinBox)
+                               QGroupBox, QFileDialog, QLabel, QComboBox, QSpinBox,
+                               QProgressBar)
 from threads.audio_extract_thread import AudioExtractThread
+from PyQt6.QtCore import Qt
 import os
 
 class AudioExtractTab(QWidget):
@@ -27,7 +29,7 @@ class AudioExtractTab(QWidget):
         file_layout.addWidget(btn_select)
         
         self.label_file = QLabel("No hay archivo seleccionado")
-        self.label_file.setStyleSheet("padding: 10px; background-color: #f0f0f0;")
+        self.label_file.setProperty("class", "file_label")
         file_layout.addWidget(self.label_file)
         
         file_group.setLayout(file_layout)
@@ -62,8 +64,23 @@ class AudioExtractTab(QWidget):
         self.btn_extract.clicked.connect(self.extract_audio)
         self.btn_extract.setMinimumHeight(50)
         self.btn_extract.setEnabled(False)
-        self.btn_extract.setStyleSheet("font-size: 14px; font-weight: bold; background-color: #2196F3; color: white;")
+        self.btn_extract.setProperty("class", "primary_btn")
+        self.btn_extract.setProperty("class", "primary_btn")
         layout.addWidget(self.btn_extract)
+        
+        # ProgressBar
+        status_layout = QVBoxLayout()
+        self.label_status = QLabel("Listo")
+        self.label_status.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        status_layout.addWidget(self.label_status)
+        
+        self.progress_bar = QProgressBar()
+        self.progress_bar.setRange(0, 100)
+        self.progress_bar.setValue(0)
+        self.progress_bar.setTextVisible(True)
+        status_layout.addWidget(self.progress_bar)
+        
+        layout.addLayout(status_layout)
         
         layout.addStretch()
         self.setLayout(layout)
@@ -110,6 +127,8 @@ class AudioExtractTab(QWidget):
         bitrate = self.combo_bitrate.currentText()
         
         self.btn_extract.setEnabled(False)
+        self.label_status.setText("Iniciando extracción...")
+        self.progress_bar.setValue(0)
         
         # Crear thread
         self.extract_thread = AudioExtractThread(
@@ -138,10 +157,16 @@ class AudioExtractTab(QWidget):
     
     def update_progress(self, value):
         """Actualiza progreso"""
+    def update_progress(self, value):
+        """Actualiza progreso"""
+        self.progress_bar.setValue(value)
         if self.parent_window:
             self.parent_window.update_progress(value)
     
     def log(self, message):
         """Log"""
+    def log(self, message):
+        """Log"""
+        self.label_status.setText(message)
         if self.parent_window:
             self.parent_window.log(message)
